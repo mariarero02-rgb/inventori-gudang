@@ -1,0 +1,36 @@
+name: Build dan Rilis APK
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Siapkan project
+        run: |
+          if [ -f inventori-gudang.zip ]; then
+            unzip -q -o inventori-gudang.zip -d _src
+            echo "PROJ=_src/inventori-gudang" >> $GITHUB_ENV
+          else
+            echo "PROJ=." >> $GITHUB_ENV
+          fi
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.9
+      - name: Build APK rilis
+        working-directory: ${{ env.PROJ }}
+        run: gradle assembleRelease
+      - name: Siapkan file APK
+        run: cp "${{ env.PROJ }}/app/build/outputs/apk/release/app-release.apk" InventoriGudang.apk
+      - name: Buat rilis di GitHub
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v0.1.${{ github.run_number }}
+          name: Inventori Gudang v0.1.${{ github.run_number }}
+          files: InventoriGudang.apk
